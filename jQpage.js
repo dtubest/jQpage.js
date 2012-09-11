@@ -1,17 +1,11 @@
 /**
- * 分页插件
+ * a simple jQuery pagination plugin
  * author: tding
- * Date: 12-9-4
  */
 (function ($) {
 
-    var debugEnabled = true;
-
-    var debug = function (info) {
-        if (debugEnabled) console.log(info);
-    }
-
     var defaults = {
+        // 下面所有的参数只在 url 模式下起作用，在 func 模式下会被忽略
         indexParamName:'pageIndex',
         sizeParamName:'pageSize',
         indexParamValue:0,
@@ -24,54 +18,9 @@
 
         var barSelf = this, tdom = $this.get(0);
 
-        barSelf.events = {
-            pageStatusChanged:'pageStatusChanged',
-            linkClicked:'linkClicked'
-        }
-
-        barSelf.defaultHandlers = {
-
-            pageStatusChanged:function (e, params) {
-
-                var barSelf = params.barSelf, $this = params.$this, links = [];
-                var tdom = $this.get(0);
-
-                // 没想到删除旧元素竟然采取了这种方式，真是不可思议，哎~~
-                tdom.innerHTML = '';
-
-                var current = barSelf.current, pages = barSelf.pages;
-
-                // 1> 构造向前链接
-                links.push(buildLink('&lt;', current - 1 >= 0 ? current - 1 : 0, 'step'));
-
-                // 2> 构造中间链接
-                var pageLinks = buildsBarLinks['type1'](barSelf);
-                for (var i = 0; i < pageLinks.length; i++)
-                    links.push(pageLinks[i]);
-
-                // 3> 构造向后链接
-                links.push(buildLink('&gt;', current + 1 < pages ? current + 1 : pages - 1, 'step'));
-
-                for (i = 0; i < links.length; i++) {
-                    links[i].appendTo(tdom);
-                    $('<span> </span>').appendTo(tdom);
-                }
-            },
-
-            linkClicked:function (e, params) {
-                var barSelf = params.barSelf, $this = params.$this, link = params.link;
-                var tdom = $this.get(0);
-                barSelf.linkAction(tdom, link);
-
-                trigger.pageStatusChanged($this, barSelf);
-            }
-        }
-
+        // 覆盖默认 settings，进行初始化
         barSelf.settings = defaults;
-
-        // 复写默认 settings，进行初始化
-        if (undefined != options)
-            barSelf.settings = $.extend(defaults, options);
+        if (undefined != options) barSelf.settings = $.extend(defaults, options);
 
         // 确定模式
         if (tdom.getAttribute('url')) barSelf.actionMode = 'link';
@@ -85,19 +34,62 @@
 
         // 进行构造
         constructs($this, barSelf);
-    }
+    };
 
-    PageBar.prototype.getLink = function () {
-    }
+    PageBar.prototype.events = {
+        pageStatusChanged:'pageStatusChanged',
+        linkClicked:'linkClicked'
+    };
+
+    PageBar.prototype.defaultHandlers = {
+
+        pageStatusChanged:function (e, params) {
+
+            var barSelf = params.barSelf, $this = params.$this, links = [];
+            var tdom = $this.get(0);
+
+            // 清理掉旧的元素
+            tdom.innerHTML = '';            // 没想到删除旧元素竟然采取了这种方式，真是不可思议，哎~~
+
+            var current = barSelf.current, pages = barSelf.pages;
+
+            // 1> 构造向前链接
+            links.push(buildLink('&lt;', current - 1 >= 0 ? current - 1 : 0, 'step'));
+
+            // 2> 构造中间链接
+            var pageLinks = buildsBarLinks['type1'](barSelf);
+            for (var i = 0; i < pageLinks.length; i++)
+                links.push(pageLinks[i]);
+
+            // 3> 构造向后链接
+            links.push(buildLink('&gt;', current + 1 < pages ? current + 1 : pages - 1, 'step'));
+
+            for (i = 0; i < links.length; i++) {
+                links[i].appendTo(tdom);
+                $('<span> </span>').appendTo(tdom);
+            }
+        },
+
+        linkClicked:function (e, params) {
+            var barSelf = params.barSelf, $this = params.$this, link = params.link;
+            var tdom = $this.get(0);
+            barSelf.linkAction(tdom, link);
+
+            trigger.pageStatusChanged($this, barSelf);
+        }
+    };
 
     var Link = function () {
-    }
+    };
 
     var trigger = {
         pageStatusChanged:function ($this, barSelf) {
             $this.trigger(barSelf.events.pageStatusChanged, {barSelf:barSelf, $this:$this});
+        },
+        linkClicked:function ($this, barSelf, link) {
+            $this.trigger(barSelf.events.linkClicked, {barSelf:barSelf, $this:$this, link:link});
         }
-    }
+    };
 
     var hasAttrError = function (tdom) {
         // url 和 func 都没有值
@@ -139,7 +131,7 @@
 //                form.appendTo(document.body);
                 form.submit();
 
-                if(barSelf.target !== '_self') {
+                if (barSelf.target !== '_self') {
                     barSelf.current = link.page;
                     trigger.pageStatusChanged($this, barSelf);
                 }
@@ -239,7 +231,7 @@
             link.name = this.innerText;
             link.page = +this.getAttribute('page');
             link.type = this.getAttribute('linktype');
-            $this.trigger(barSelf.events.linkClicked, {barSelf:barSelf, $this:$this, link:link});
+            trigger.linkClicked($this, barSelf, link);
         });
 
         trigger.pageStatusChanged($this, barSelf);
@@ -253,12 +245,6 @@
             new PageBar($this, options);
 
             return $this;
-        },
-        show:function () {
-        },
-        hide:function () {
-        },
-        update:function (content) {
         }
     };
 
